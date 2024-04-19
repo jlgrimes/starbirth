@@ -1,7 +1,6 @@
 const axios = require("axios");
-import cheerio from 'cheerio';
-
-const RK9_EVENT_URL = 'https://rk9.gg/events/pokemon';
+import { load } from 'cheerio';
+import { RK9_EVENT_URL } from './constants';
 
 /**
  * @param name - Name of the tournament;
@@ -23,7 +22,7 @@ interface TournamentInformation {
 
 export const scrapeTournaments = async (): Promise<TournamentInformation[]> => {
   const response = await axios.get(RK9_EVENT_URL);
-  const $ = cheerio.load(response.data);
+  const $ = load(response.data);
 
   const pastTournaments: TournamentInformation[] = [];
   $('table#dtPastEvents > tbody').children('tr').each((i, el) => {
@@ -35,7 +34,6 @@ export const scrapeTournaments = async (): Promise<TournamentInformation[]> => {
 
       const tournamentDates = $(dateNode).text();
       const tournamentName = $(titleNode).text().trim();
-      // const tournamentSlug = $(titleNode).find('a').attr()?.['href'];
       const tournamentLocation = $(locationNode).text();
 
       const goLink = $(linksNode).find('a:contains("GO")').attr()?.['href']
