@@ -6,7 +6,8 @@ import { scrapePairings } from './pairings';
 export async function POST(req: Request) {
   try {
     // const tournaments = await scrapeTournaments();
-    await scrapePairings('ORL01mtNi5LV1IgmscGJ');
+    const players = await scrapePairings('ORL01mtNi5LV1IgmscGJ');
+    console.log(players);
 
     return Response.json({ message: 'Successfully scraped', code: 200 })
   } catch (error) {

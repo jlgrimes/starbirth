@@ -1,6 +1,5 @@
 const axios = require("axios");
 import { load } from 'cheerio';
-import { v4 as uuidv4 } from 'uuid';
 import { BASE_RK9_PAIRINGS_URL } from './constants';
 
 type AgeDivision = 'juniors' | 'seniors' | 'masters';
@@ -19,9 +18,7 @@ interface PlayerAbstract {
 }
 
 interface Match {
-  // ID of the opponent the match was
   opponent: string;
-  tableNumber: number;
   result: MatchResult;
 }
 
@@ -61,6 +58,10 @@ export const scrapePairings = async (rk9Slug: string) => {
 
   if (!mastersRoundNumber) throw 'Masters round undefined';
   
+  const players: Player[] = [];
+
+  const getExistingPlayerIndex = (name: string) => players.findIndex((existingPlayer) => existingPlayer.name === name);
+
   for (const roundNumber of Array.from( { length: parseInt(mastersRoundNumber) }, (x, i) => i + 1 )) {
     console.log(`Loading round ${roundNumber}...`)
 
@@ -70,10 +71,44 @@ export const scrapePairings = async (rk9Slug: string) => {
     $('body > div').each((i, table) => {
       const [firstPlayerNode, tableNumber, secondPlayerNode] = $(table).children('div').toArray()
 
-      const firstPlayer = getPlayerAbstractFromDisplayText($(firstPlayerNode).text());
-      console.log(firstPlayer)
-
-      // console.log(firstPlayerName, firstPlayerRegion)
+      // Removes instances of players who were dropped/no-show/kicked
+      if ($(secondPlayerNode).text().length > 0) {
+        const firstPlayer = getPlayerAbstractFromDisplayText($(firstPlayerNode).text());
+        const secondPlayer = getPlayerAbstractFromDisplayText($(secondPlayerNode).text());
+        const bothPlayers = [firstPlayer, secondPlayer];
+  
+        for (const playerIdx of [0, 1]) {
+          const currentPlayer = bothPlayers[playerIdx];
+          const opponentPlayer = playerIdx === 0 ? secondPlayer : firstPlayer;
+  
+          // TODO: Implement the logic for duplicate names. This just overrides them.
+          const existingPlayerIdx = getExistingPlayerIndex(currentPlayer.name);
+  
+          if (existingPlayerIdx >= 0) {
+            players[existingPlayerIdx] = {
+              ...currentPlayer,
+              matches: [
+                ...players[existingPlayerIdx].matches, {
+                  opponent: opponentPlayer.name,
+                  // TODO: Implement logic for the results
+                  result: 'win'
+                }
+              ]
+            };
+          } else {
+            players.push({
+              ...currentPlayer,
+              matches: [{
+                opponent: opponentPlayer.name,
+                // TODO: Implement logic for the results
+                result: 'win'
+              }]
+            });
+          }
+        }
+      }
     });
   }
+
+  return players;
 }
