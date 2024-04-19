@@ -9,6 +9,7 @@ interface TournamentRecord {
   wins: number;
   ties: number;
   losses: number;
+  matchPoints: number;
 }
 
 interface PlayerAbstract {
@@ -44,7 +45,8 @@ const getPlayerAbstractFromDisplayText = (text: string): PlayerAbstract => {
     record: {
       wins: parseInt(wins),
       ties: parseInt(ties),
-      losses: parseInt(losses)
+      losses: parseInt(losses),
+      matchPoints: parseInt(wins) * 3 + parseInt(ties)
     }
   }
 }
