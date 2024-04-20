@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     // const tournaments = await scrapeTournaments();
     const players = await scrapePairings('ORL01mtNi5LV1IgmscGJ');
-    console.log(players);
+    console.log(JSON.stringify(players.filter((player) => player.name === 'Jared Grimes')));
 
     return Response.json({ message: 'Successfully scraped', code: 200 })
   } catch (error) {

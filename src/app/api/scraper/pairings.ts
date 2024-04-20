@@ -20,7 +20,8 @@ interface PlayerAbstract {
 
 interface Match {
   opponent: string;
-  result: MatchResult;
+  result: MatchResult | undefined;
+  tableNumber: number;
 }
 
 interface Player extends PlayerAbstract {
@@ -71,12 +72,25 @@ export const scrapePairings = async (rk9Slug: string) => {
     const $ = load(response.data);
     
     $('body > div').each((i, table) => {
-      const [firstPlayerNode, tableNumber, secondPlayerNode] = $(table).children('div').toArray()
+      const [firstPlayerNode, tableNumberNode, secondPlayerNode] = $(table).children('div').toArray();
+
+      // playerIdx is 0 if it refers to first player, 1 if it's second player
+      const getResult = (playerIdx: number): MatchResult | undefined => {
+        const playerNode = (playerIdx === 0) ? firstPlayerNode : secondPlayerNode;
+
+        if ($(playerNode).hasClass('winner')) return 'win';
+        if ($(playerNode).hasClass('loser')) return 'loss';
+        if ($(playerNode).hasClass('tie')) return 'tie';
+  
+        // Match is incomplete
+        return undefined;
+      }
 
       // Removes instances of players who were dropped/no-show/kicked
       if ($(secondPlayerNode).text().length > 0) {
         const firstPlayer = getPlayerAbstractFromDisplayText($(firstPlayerNode).text());
         const secondPlayer = getPlayerAbstractFromDisplayText($(secondPlayerNode).text());
+        const tableNumber = $(tableNumberNode).find('span.tablenumber').text();
         const bothPlayers = [firstPlayer, secondPlayer];
   
         for (const playerIdx of [0, 1]) {
@@ -92,8 +106,8 @@ export const scrapePairings = async (rk9Slug: string) => {
               matches: [
                 ...players[existingPlayerIdx].matches, {
                   opponent: opponentPlayer.name,
-                  // TODO: Implement logic for the results
-                  result: 'win'
+                  result: getResult(playerIdx),
+                  tableNumber: parseInt(tableNumber)
                 }
               ]
             };
@@ -102,8 +116,8 @@ export const scrapePairings = async (rk9Slug: string) => {
               ...currentPlayer,
               matches: [{
                 opponent: opponentPlayer.name,
-                // TODO: Implement logic for the results
-                result: 'win'
+                result: getResult(playerIdx),
+                tableNumber: parseInt(tableNumber)
               }]
             });
           }
